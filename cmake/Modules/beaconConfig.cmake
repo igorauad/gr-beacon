@@ -22,9 +22,10 @@ FIND_LIBRARY(
           /usr/local/lib64
           /usr/lib
           /usr/lib64
-)
+          )
+
+include("${CMAKE_CURRENT_LIST_DIR}/beaconTarget.cmake")
 
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(BEACON DEFAULT_MSG BEACON_LIBRARIES BEACON_INCLUDE_DIRS)
 MARK_AS_ADVANCED(BEACON_LIBRARIES BEACON_INCLUDE_DIRS)
-

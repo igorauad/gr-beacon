@@ -1,0 +1,30 @@
+id: beacon_beacon_sink_c
+label: Beacon Sink
+category: '[beacon]'
+
+templates:
+  imports: import beacon
+  make: beacon.beacon_sink_c(${log_period}, ${ref_ampl}, ${ref_cnr}, ${fft_len}, ${alpha})
+
+parameters:
+- id: log_period
+  label: Logging Period
+  dtype: float
+- id: ref_ampl
+  label: Reference Amplitude
+  dtype: float
+- id: ref_cnr
+  label: Reference CNR
+  dtype: float
+- id: fft_len
+  label: FFT Length
+  dtype: int
+- id: alpha
+  label: Alpha
+  dtype: float
+
+inputs:
+- label: In
+  dtype: complex
+
+file_format: 1
