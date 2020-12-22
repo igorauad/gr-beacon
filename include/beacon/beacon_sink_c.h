@@ -39,15 +39,12 @@ public:
 
     /*!
      * \brief Return a shared_ptr to a new instance of beacon::beacon_sink_c.
-     * \param log_period Period to log amplitude and C/N measurements.
-     * \param ref_ampl Reference amplitude.
-     * \param ref_cnr Reference carrier-to-noise ratio (CNR).
+     * \param log_period Period to log amplitude and CNR measurements.
      * \param fft_len FFT length used to compute the power spectral density (PSD).
      * \param alpha Coefficient for exponentially-weighted moving average of PSD
      * measurements.
      */
-    static sptr
-    make(float log_period, float ref_ampl, float ref_cnr, int fft_len, float alpha);
+    static sptr make(float log_period, int fft_len, float alpha);
 };
 
 } // namespace beacon

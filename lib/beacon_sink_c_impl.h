@@ -33,8 +33,6 @@ class beacon_sink_c_impl : public beacon_sink_c
 private:
     /* Input Parameters */
     float d_log_period;
-    float d_ref_ampl;
-    float d_ref_cnr;
     int d_fft_len;
     float d_alpha;
     float d_beta;
@@ -53,8 +51,7 @@ private:
     float process_block(const gr_complex* in);
 
 public:
-    beacon_sink_c_impl(
-        float log_period, float ref_ampl, float ref_cnr, int fft_len, float alpha);
+    beacon_sink_c_impl(float log_period, int fft_len, float alpha);
     ~beacon_sink_c_impl();
 
     // Where all the action really happens

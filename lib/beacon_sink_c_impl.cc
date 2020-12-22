@@ -30,24 +30,19 @@
 namespace gr {
 namespace beacon {
 
-beacon_sink_c::sptr beacon_sink_c::make(
-    float log_period, float ref_ampl, float ref_cnr, int fft_len, float alpha)
+beacon_sink_c::sptr beacon_sink_c::make(float log_period, int fft_len, float alpha)
 {
-    return gnuradio::get_initial_sptr(
-        new beacon_sink_c_impl(log_period, ref_ampl, ref_cnr, fft_len, alpha));
+    return gnuradio::get_initial_sptr(new beacon_sink_c_impl(log_period, fft_len, alpha));
 }
 
 /*
  * The private constructor
  */
-beacon_sink_c_impl::beacon_sink_c_impl(
-    float log_period, float ref_ampl, float ref_cnr, int fft_len, float alpha)
+beacon_sink_c_impl::beacon_sink_c_impl(float log_period, int fft_len, float alpha)
     : gr::sync_block("beacon_sink_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
                      gr::io_signature::make(0, 0, 0)),
       d_log_period(log_period),
-      d_ref_ampl(ref_ampl),
-      d_ref_cnr(ref_cnr),
       d_fft_len(fft_len),
       d_alpha(alpha),
       d_beta(1 - alpha),

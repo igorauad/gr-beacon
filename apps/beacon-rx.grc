@@ -70,8 +70,6 @@ blocks:
     comment: ''
     fft_len: fftlen
     log_period: period
-    ref_ampl: '1.0'
-    ref_cnr: '1.0'
   states:
     bus_sink: false
     bus_source: false
