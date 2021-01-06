@@ -43,8 +43,21 @@ public:
      * \param fft_len FFT length used to compute the power spectral density (PSD).
      * \param alpha Coefficient for exponentially-weighted moving average of PSD
      * measurements.
+     * \param samp_rate Sampling rate.
      */
-    static sptr make(float log_period, int fft_len, float alpha);
+    static sptr make(float log_period, int fft_len, float alpha, float samp_rate);
+
+    /*!
+     * \brief Get the most recent CNR measurement
+     * \return (float) CNR
+     */
+    virtual float get_cnr() = 0;
+
+    /*!
+     * \brief Get the most recent carrier (or CW beacon) frequency measurement
+     * \return (float) Frequency in Hz
+     */
+    virtual float get_freq() = 0;
 };
 
 } // namespace beacon

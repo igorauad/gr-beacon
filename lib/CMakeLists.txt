@@ -34,7 +34,7 @@ if(NOT beacon_sources)
 endif(NOT beacon_sources)
 
 add_library(gnuradio-beacon SHARED ${beacon_sources})
-target_link_libraries(gnuradio-beacon gnuradio::gnuradio-runtime gnuradio::gnuradio-fft)
+target_link_libraries(gnuradio-beacon gnuradio::gnuradio-runtime gnuradio::gnuradio-fft gnuradio::gnuradio-filter Volk::volk)
 target_include_directories(gnuradio-beacon
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>

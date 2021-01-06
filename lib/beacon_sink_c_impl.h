@@ -28,6 +28,11 @@
 namespace gr {
 namespace beacon {
 
+struct block_res {
+    float cnr;
+    float freq;
+};
+
 class beacon_sink_c_impl : public beacon_sink_c
 {
 private:
@@ -36,9 +41,10 @@ private:
     int d_fft_len;
     float d_alpha;
     float d_beta;
+    float d_samp_rate;
 
-    float d_avg_ampl;
     float d_cnr;
+    float d_freq;
     fft::fft_complex* d_fft;
     std::chrono::time_point<std::chrono::system_clock> d_t_last_print;
 
@@ -48,16 +54,22 @@ private:
     uint32_t* d_i_max_buffer;
     float* d_accum_buffer;
 
-    float process_block(const gr_complex* in);
+    std::vector<float> d_window;
+    float d_win_enbw; // Window equivalent noise bandwidth (ENBW) in dB
+
+    struct block_res process_block(const gr_complex* in);
 
 public:
-    beacon_sink_c_impl(float log_period, int fft_len, float alpha);
+    beacon_sink_c_impl(float log_period, int fft_len, float alpha, float samp_rate);
     ~beacon_sink_c_impl();
 
     // Where all the action really happens
     int work(int noutput_items,
              gr_vector_const_void_star& input_items,
              gr_vector_void_star& output_items);
+
+    float get_cnr() { return d_cnr; };
+    float get_freq() { return d_freq; };
 };
 
 } // namespace beacon

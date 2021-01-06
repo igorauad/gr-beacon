@@ -53,7 +53,7 @@ blocks:
     label: Alpha coefficient for exponentially-weighted averaging.
     short_id: a
     type: eng_float
-    value: '0.01'
+    value: '0.0005'
   states:
     bus_sink: false
     bus_source: false
@@ -70,6 +70,7 @@ blocks:
     comment: ''
     fft_len: fftlen
     log_period: period
+    samp_rate: samp_rate
   states:
     bus_sink: false
     bus_source: false

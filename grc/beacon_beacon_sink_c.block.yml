@@ -4,7 +4,7 @@ category: '[beacon]'
 
 templates:
   imports: import beacon
-  make: beacon.beacon_sink_c(${log_period}, ${fft_len}, ${alpha})
+  make: beacon.beacon_sink_c(${log_period}, ${fft_len}, ${alpha}, ${samp_rate})
 
 parameters:
 - id: log_period
@@ -15,6 +15,9 @@ parameters:
   dtype: int
 - id: alpha
   label: Alpha
+  dtype: float
+- id: samp_rate
+  label: Sampling Rate
   dtype: float
 
 inputs:
