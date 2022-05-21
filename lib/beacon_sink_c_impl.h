@@ -39,6 +39,7 @@ private:
     /* Input Parameters */
     float d_log_period;
     int d_fft_len;
+    int d_half_fft_len;
     float d_alpha;
     float d_beta;
     float d_samp_rate;

@@ -83,6 +83,7 @@ beacon_sink_c_impl::beacon_sink_c_impl(float log_period,
                      gr::io_signature::make(0, 0, 0)),
       d_log_period(log_period),
       d_fft_len(fft_len),
+      d_half_fft_len(fft_len / 2),
       d_alpha(alpha),
       d_beta(1 - alpha),
       d_samp_rate(samp_rate),
@@ -193,7 +194,8 @@ struct block_res beacon_sink_c_impl::process_block(const gr_complex* in)
     float cnr = 10 * log10(cnr_lin) + d_win_enbw;
 
     // Beacon/carrier frequency
-    float freq = i_max * (d_samp_rate / d_fft_len);
+    int i_max_wrapped = (i_max > d_half_fft_len) ? i_max - d_fft_len : i_max;
+    float freq = i_max_wrapped * (d_samp_rate / d_fft_len);
 
     return { cnr, freq };
 }
