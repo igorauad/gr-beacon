@@ -1,27 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2020 Blockstream Corp..
+# Copyright 2022 Blockstream Corp..
 #
-# This is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3, or (at your option)
-# any later version.
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
-# This software is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this software; see the file COPYING.  If not, write to
-# the Free Software Foundation, Inc., 51 Franklin Street,
-# Boston, MA 02110-1301, USA.
-#
+
 from math import sqrt
 from gnuradio import gr, gr_unittest
-from gnuradio import blocks, analog
-import beacon_swig as beacon
+from gnuradio import analog, blocks
+try:
+    from gnuradio.beacon import beacon_sink_c
+except ImportError:
+    import os
+    import sys
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    sys.path.append(os.path.join(dirname, "bindings"))
+    from gnuradio.beacon import beacon_sink_c
+
 
 class qa_beacon_sink_c(gr_unittest.TestCase):
 
@@ -31,8 +27,15 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
     def tearDown(self):
         self.tb = None
 
-    def _test_sine_wave(self, cnr_db, freq, samp_rate, Nfft, alpha, A=1.0,
-                        n_blocks=1000, tol=0.2):
+    def _test_sine_wave(self,
+                        cnr_db,
+                        freq,
+                        samp_rate,
+                        Nfft,
+                        alpha,
+                        A=1.0,
+                        n_blocks=1000,
+                        tol=0.5):
         """Test CNR estimation for a "complex wave", i.e., exp(j2*pi*F*n)
 
         Args:
@@ -64,10 +67,10 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
         #
         # The beacon sink module uses computation #1. Hence, it follows that:
         carrier_psd = (A * Nfft)**2
-        noise_floor = carrier_psd / (10**(cnr_db/10))
+        noise_floor = carrier_psd / (10**(cnr_db / 10))
 
-        # For each PSD computaion above, there is a corresponding way to compute
-        # the total power, summarized below:
+        # For each PSD computaion above, there is a corresponding way to
+        # compute the total power, summarized below:
         #
         # 1) P[k] = |FFT[k]|^2 ->  sum( P[k] / Nfft^2 )  for all k
         # 2) P[k] = |FFT[k]|^2 / Nfft -> sum( P[k] / Nfft )  for all k
@@ -89,7 +92,7 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
         noise = analog.noise_source_c(analog.GR_GAUSSIAN, noise_std, 0)
         nadder = blocks.add_cc()
         head = blocks.head(gr.sizeof_gr_complex, int(n_samples))
-        beacon_sink = beacon.beacon_sink_c(log_period, Nfft, alpha, samp_rate)
+        beacon_sink = beacon_sink_c(log_period, Nfft, alpha, samp_rate)
         self.tb.connect(src, head, (nadder, 0))
         self.tb.connect(noise, (nadder, 1))
         self.tb.connect(nadder, beacon_sink)
@@ -105,7 +108,8 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
         # within +-delta_f on the frequency estimate. This is an acceptable
         # price to be paid for using the flat-top window, which allows for
         # better CNR estimates avoiding scalloping loss effects.
-        self.assertAlmostEqual(beacon_sink.get_freq(), expected_freq,
+        self.assertAlmostEqual(beacon_sink.get_freq(),
+                               expected_freq,
                                delta=delta_f)
 
         # Check CNR estimate
@@ -121,7 +125,11 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
         n_blocks = int(1 / alpha)  # generate enough FFT blocks to average them
         for cnr_db in range(10, 40):
             with self.subTest(cnr_db=cnr_db):
-                self._test_sine_wave(cnr_db, freq, samp_rate, Nfft, alpha,
+                self._test_sine_wave(cnr_db,
+                                     freq,
+                                     samp_rate,
+                                     Nfft,
+                                     alpha,
                                      n_blocks=n_blocks)
 
     def test_non_fft_aligned_cw_frequency(self):
@@ -137,7 +145,11 @@ class qa_beacon_sink_c(gr_unittest.TestCase):
         n_blocks = int(1 / alpha)  # generate enough FFT blocks to average them
         for cnr_db in range(10, 40):
             with self.subTest(cnr_db=cnr_db):
-                self._test_sine_wave(cnr_db, freq, samp_rate, Nfft, alpha,
+                self._test_sine_wave(cnr_db,
+                                     freq,
+                                     samp_rate,
+                                     Nfft,
+                                     alpha,
                                      n_blocks=n_blocks)
 
 

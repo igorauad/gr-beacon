@@ -1,29 +1,16 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2020 Blockstream Corp..
+ * Copyright 2022 Blockstream Corp..
  *
- * This is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 #ifndef INCLUDED_BEACON_BEACON_SINK_C_IMPL_H
 #define INCLUDED_BEACON_BEACON_SINK_C_IMPL_H
 
+#include <gnuradio/beacon/beacon_sink_c.h>
 #include <gnuradio/fft/fft.h>
-#include <beacon/beacon_sink_c.h>
-#include <chrono>
+#include <iomanip>
 
 namespace gr {
 namespace beacon {
@@ -39,19 +26,19 @@ private:
     /* Input Parameters */
     float d_log_period;
     int d_fft_len;
-    int d_half_fft_len;
+    uint32_t d_half_fft_len;
     float d_alpha;
     float d_beta;
     float d_samp_rate;
 
     float d_cnr;
     float d_freq;
-    fft::fft_complex* d_fft;
+    fft::fft_complex_fwd* d_fft;
     std::chrono::time_point<std::chrono::system_clock> d_t_last_print;
 
     /* Volk Buffers */
-    float* d_mag_buffer;
-    float* d_avg_buffer;
+    volk::vector<float> d_mag_buffer;
+    volk::vector<float> d_avg_buffer;
     uint32_t* d_i_max_buffer;
     float* d_accum_buffer;
 

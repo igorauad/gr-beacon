@@ -1,32 +1,13 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2020 Blockstream Corp..
+ * Copyright 2022 Blockstream Corp..
  *
- * This is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "beacon_sink_c_impl.h"
 #include <gnuradio/filter/firdes.h>
 #include <gnuradio/io_signature.h>
-#include <volk/volk.h>
-#include <iostream>
 
 namespace gr {
 namespace beacon {
@@ -55,21 +36,22 @@ static float calc_enbw(std::vector<float>& window, int Nfft)
  * @param N FFT length.
  * @return Void.
  */
-static void print_fft(float* p_fft, int N)
-{
-    std::cout << "[";
-    for (int i = 0; i < (N - 1); i++) {
-        std::cout << p_fft[i] << ", ";
-    }
-    std::cout << p_fft[N - 1] << "]" << std::endl;
-}
+// static void print_fft(float* p_fft, int N)
+// {
+//     std::cout << "[";
+//     for (int i = 0; i < (N - 1); i++) {
+//         std::cout << p_fft[i] << ", ";
+//     }
+//     std::cout << p_fft[N - 1] << "]" << std::endl;
+// }
 
 beacon_sink_c::sptr
 beacon_sink_c::make(float log_period, int fft_len, float alpha, float samp_rate)
 {
-    return gnuradio::get_initial_sptr(
-        new beacon_sink_c_impl(log_period, fft_len, alpha, samp_rate));
+    return gnuradio::make_block_sptr<beacon_sink_c_impl>(
+        log_period, fft_len, alpha, samp_rate);
 }
+
 
 /*
  * The private constructor
@@ -88,15 +70,15 @@ beacon_sink_c_impl::beacon_sink_c_impl(float log_period,
       d_beta(1 - alpha),
       d_samp_rate(samp_rate),
       d_cnr(0),
-      d_freq(0)
+      d_freq(0),
+      d_mag_buffer(fft_len),
+      d_avg_buffer(fft_len)
 {
     set_output_multiple(fft_len);
-    d_fft = new fft::fft_complex(fft_len, true);
-    d_mag_buffer = (float*)volk_malloc(fft_len * sizeof(float), volk_get_alignment());
-    d_avg_buffer = (float*)volk_malloc(fft_len * sizeof(float), volk_get_alignment());
+    d_fft = new fft::fft_complex_fwd(fft_len, true);
     d_i_max_buffer = (uint32_t*)volk_malloc(sizeof(uint32_t), volk_get_alignment());
     d_accum_buffer = (float*)volk_malloc(sizeof(float), volk_get_alignment());
-    memset(d_avg_buffer, 0, fft_len * sizeof(float));
+    memset(d_avg_buffer.data(), 0, fft_len * sizeof(float));
 
     // Use a flat-top window given that it is one of the few windows that
     // presents negligible scalloping loss. This window has a relatively wide
@@ -108,8 +90,8 @@ beacon_sink_c_impl::beacon_sink_c_impl(float log_period,
     // scalloping loss is negligible, which allows for measuring the beacon
     // power level well even if the beacon frequency does not align with the
     // frequency of an FFT bin.
-    d_window = filter::firdes::window(
-        filter::firdes::WIN_FLATTOP, fft_len, 0 /* unused param */);
+    d_window =
+        filter::firdes::window(fft::window::WIN_FLATTOP, fft_len, 0 /* unused param */);
 
     // Compute the window's ENBW in dB, which is used to compensate for the
     // windowing-induced increase in noise floor.
@@ -121,8 +103,6 @@ beacon_sink_c_impl::beacon_sink_c_impl(float log_period,
  */
 beacon_sink_c_impl::~beacon_sink_c_impl()
 {
-    volk_free(d_mag_buffer);
-    volk_free(d_avg_buffer);
     volk_free(d_i_max_buffer);
     volk_free(d_accum_buffer);
 }
@@ -136,13 +116,16 @@ struct block_res beacon_sink_c_impl::process_block(const gr_complex* in)
     d_fft->execute();
 
     /* Average |FFT|^2 (squared FFT magnitude) */
-    volk_32fc_magnitude_squared_32f(d_mag_buffer, d_fft->get_outbuf(), d_fft_len);
-    volk_32f_s32f_multiply_32f(d_mag_buffer, d_mag_buffer, d_alpha, d_fft_len);
-    volk_32f_s32f_multiply_32f(d_avg_buffer, d_avg_buffer, d_beta, d_fft_len);
-    volk_32f_x2_add_32f(d_avg_buffer, d_avg_buffer, d_mag_buffer, d_fft_len);
+    volk_32fc_magnitude_squared_32f(d_mag_buffer.data(), d_fft->get_outbuf(), d_fft_len);
+    volk_32f_s32f_multiply_32f(
+        d_mag_buffer.data(), d_mag_buffer.data(), d_alpha, d_fft_len);
+    volk_32f_s32f_multiply_32f(
+        d_avg_buffer.data(), d_avg_buffer.data(), d_beta, d_fft_len);
+    volk_32f_x2_add_32f(
+        d_avg_buffer.data(), d_avg_buffer.data(), d_mag_buffer.data(), d_fft_len);
 
     /* Peak detection */
-    volk_32f_index_max_32u(d_i_max_buffer, d_avg_buffer, d_fft_len);
+    volk_32f_index_max_32u(d_i_max_buffer, d_avg_buffer.data(), d_fft_len);
     uint32_t i_max = *d_i_max_buffer;
 
     /* Skip a range of indexes around the CW peak to measure the noise floor */
@@ -160,21 +143,21 @@ struct block_res beacon_sink_c_impl::process_block(const gr_complex* in)
     /* Obtain the noise floor by averaging all FFT mag values **out** of the
      * peak region. Sum values before and after the end of the peak region. */
     float noise_accum = 0;
-    uint32_t n_points;
     if (i_s > i_e) {
         // When i_s is beyond i_e, it is because i_s wrapped around
         // Accumulate range [i_e to i_s]
-        volk_32f_accumulator_s32f(d_accum_buffer, d_avg_buffer + i_e, (i_s - i_e));
+        volk_32f_accumulator_s32f(d_accum_buffer, d_avg_buffer.data() + i_e, (i_s - i_e));
         noise_accum += *d_accum_buffer;
         assert((i_s - i_e) == (d_fft_len - (2 * N - 1)));
     } else {
         // Accumulate range [i_e, fft_len)
-        volk_32f_accumulator_s32f(d_accum_buffer, d_avg_buffer + i_e, (d_fft_len - i_e));
+        volk_32f_accumulator_s32f(
+            d_accum_buffer, d_avg_buffer.data() + i_e, (d_fft_len - i_e));
         noise_accum += *d_accum_buffer;
         // Accumulate range [0, i_s]
-        volk_32f_accumulator_s32f(d_accum_buffer, d_avg_buffer, i_s);
+        volk_32f_accumulator_s32f(d_accum_buffer, d_avg_buffer.data(), i_s);
         noise_accum += *d_accum_buffer;
-        assert(((d_fft_len - i_e) + i_s) == (d_fft_len - (2 * N - 1)));
+        // assert(((d_fft_len - i_e) + i_s) == (d_fft_len - (2 * N - 1)));
     }
     float noise_floor = noise_accum / (d_fft_len - (2 * N - 1));
 

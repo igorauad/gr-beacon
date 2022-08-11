@@ -3,7 +3,7 @@ label: Beacon Sink
 category: '[beacon]'
 
 templates:
-  imports: import beacon
+  imports: from gnuradio import beacon
   make: beacon.beacon_sink_c(${log_period}, ${fft_len}, ${alpha}, ${samp_rate})
 
 parameters:
